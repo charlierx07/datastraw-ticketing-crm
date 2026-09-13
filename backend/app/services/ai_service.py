@@ -130,7 +130,7 @@ class AIService:
         import httpx
         import json
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.AI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={settings.AI_API_KEY}"
         prompt = (
             f"You are an AI customer support assistant. Analyze the following customer support ticket and return a JSON object:\n"
             f"Customer Name: {customer_name}\n"
@@ -156,7 +156,7 @@ class AIService:
         }
 
         try:
-            resp = httpx.post(url, json=payload, timeout=6.0)
+            resp = httpx.post(url, json=payload, timeout=12.0)
             if resp.status_code == 200:
                 data = resp.json()
                 text_response = data["candidates"][0]["content"]["parts"][0]["text"]
