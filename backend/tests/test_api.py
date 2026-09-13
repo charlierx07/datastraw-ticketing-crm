@@ -229,7 +229,7 @@ def test_ai_insights_feature_and_fallback(client_and_db):
     assert data["ai_category"] in ["Shipping & Logistics", "General Inquiry"]
     assert data["ai_priority"] in ["High", "Medium"]
     assert data["ai_sentiment"] == "Negative"
-    assert "Hi Vikram" in data["ai_suggested_response"]
+    assert "Vikram" in data["ai_suggested_response"]  # Gemini may use "Dear Vikram" or "Hi Vikram"
 
     # 2. Test refresh endpoint
     refresh_res = client.post(f"/api/tickets/{tid}/ai-insights")
