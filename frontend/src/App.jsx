@@ -122,15 +122,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex relative overflow-x-hidden selection:bg-indigo-500 selection:text-white font-sans antialiased">
+    <div className="min-h-screen bg-[#F6F8FC] text-slate-900 flex relative overflow-x-hidden selection:bg-blue-100 selection:text-blue-900 font-sans antialiased">
       
-      {/* Ambient Radial Mesh Background Glows */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 -right-40 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl" />
-      </div>
-
       {/* Desktop Fixed & Mobile Drawer Sidebar */}
       <Sidebar
         currentView={currentView}
@@ -141,9 +134,9 @@ export default function App() {
       />
 
       {/* Main Workspace Area (offset by sidebar width on lg+ screens) */}
-      <div className="lg:pl-64 flex flex-col flex-1 min-w-0 min-h-screen relative z-10">
+      <div className="lg:pl-60 flex flex-col flex-1 min-w-0 min-h-screen">
         
-        {/* Glassmorphic Sticky Top Navigation Bar */}
+        {/* Minimal Transparent Topbar */}
         <Topbar
           onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
           onOpenCreate={() => setIsCreateOpen(true)}
@@ -154,21 +147,21 @@ export default function App() {
           onSearchChange={setSearch}
         />
 
-        {/* Main Workspace View Container */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Main Workspace Content */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7">
           {currentView === 'list' ? (
             <div>
-              {/* Welcome Banner */}
+              {/* Compact Dashboard Welcome Header */}
               <DashboardHeader onOpenCreate={() => setIsCreateOpen(true)} />
 
-              {/* KPI Metric Cards */}
+              {/* Minimal KPI Metric Cards */}
               <StatCards
                 stats={stats}
                 currentFilter={statusFilter}
                 onSelectFilter={(newFilter) => setStatusFilter(newFilter)}
               />
 
-              {/* Search and Status Filters */}
+              {/* Clean Search and Filter Toolbar */}
               <SearchBar
                 search={search}
                 onSearchChange={setSearch}
@@ -177,7 +170,7 @@ export default function App() {
                 totalMatches={tickets.length}
               />
 
-              {/* Ticket List Table */}
+              {/* Main Ticket Table */}
               <TicketList
                 tickets={tickets}
                 isLoading={isLoading}
@@ -199,15 +192,15 @@ export default function App() {
           )}
         </main>
 
-        {/* Dark Frosted Glass Footer */}
-        <footer className="border-t border-white/[0.08] bg-slate-950/40 backdrop-blur-md py-6 mt-12 text-center text-xs text-slate-400">
+        {/* Minimal Clean Footer */}
+        <footer className="border-t border-slate-200/80 py-5 text-center text-xs text-slate-400">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-300">SupportHub CRM</span>
-              <span className="text-slate-600">&bull;</span>
-              <span>FastAPI + SQLite + React</span>
+              <span className="font-medium text-slate-600">SupportHub CRM</span>
+              <span className="text-slate-300">&bull;</span>
+              <span>FastAPI &bull; SQLite &bull; React</span>
             </div>
-            <span className="text-slate-500">Production-ready MVP architecture for Datastraw Evaluation</span>
+            <span className="text-slate-400">Minimal SaaS workspace architecture</span>
           </div>
         </footer>
 

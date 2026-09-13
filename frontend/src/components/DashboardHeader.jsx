@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Sparkles, Plus } from 'lucide-react';
+import { Calendar, Plus } from 'lucide-react';
 
 export const DashboardHeader = ({ onOpenCreate }) => {
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -10,40 +10,29 @@ export const DashboardHeader = ({ onOpenCreate }) => {
   });
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
       {/* Welcome Title & Date */}
       <div>
-        <div className="flex items-center gap-2.5 mb-1.5">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            Welcome back, Admin
-          </h1>
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-            <Sparkles className="w-3 h-3 text-indigo-400" />
-            Live Desk
-          </span>
-        </div>
-        <div className="flex items-center gap-3 text-xs text-slate-400">
-          <p>Here’s what’s happening with your customer tickets today.</p>
-          <span className="hidden sm:inline text-slate-600">&bull;</span>
-          <span className="hidden sm:inline-flex items-center gap-1.5 text-slate-400">
+        <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">
+          Welcome back, Admin
+        </h1>
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 mt-0.5">
+          <p>Here’s what’s happening with your customer support tickets today.</p>
+          <span className="hidden md:inline text-slate-300">&bull;</span>
+          <span className="hidden md:inline-flex items-center gap-1 text-slate-400 text-xs">
             <Calendar className="w-3.5 h-3.5 text-slate-400" />
             {currentDate}
           </span>
         </div>
       </div>
 
-      {/* Motivational / Action Badge & Quick Button */}
-      <div className="flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/50 backdrop-blur-md border border-white/[0.08] text-xs text-slate-300 shadow-sm">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
-          <span className="font-medium text-slate-300">Resolve · Support · Grow</span>
-        </div>
-
+      {/* Quick Action Button */}
+      <div className="flex items-center gap-2 self-start sm:self-auto">
         <button
           onClick={onOpenCreate}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-400 hover:opacity-95 text-white text-xs font-semibold shadow-lg shadow-indigo-500/25 hover:-translate-y-0.5 transition duration-150"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium shadow-2xs transition duration-150"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span>New Ticket</span>
         </button>
       </div>

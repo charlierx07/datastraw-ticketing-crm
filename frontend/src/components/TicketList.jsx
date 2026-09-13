@@ -1,6 +1,6 @@
 import React from 'react';
 import { StatusBadge } from './Badge';
-import { Inbox, AlertCircle, ArrowRight, Calendar, User, Mail, ChevronRight } from 'lucide-react';
+import { Inbox, AlertCircle, ArrowRight, Calendar, Mail, ChevronRight } from 'lucide-react';
 
 export const TicketList = ({
   tickets,
@@ -12,25 +12,25 @@ export const TicketList = ({
   hasFilters,
   onResetFilters
 }) => {
-  // 1. Loading State (Shimmering Frosted Glass Rows)
+  // 1. Loading State (Shimmering Light Rows)
   if (isLoading) {
     return (
-      <div className="bg-slate-900/50 backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden shadow-sm">
-        <div className="p-5 border-b border-white/[0.06] flex items-center justify-between">
-          <div className="h-5 w-32 bg-white/[0.05] rounded-lg animate-pulse" />
-          <div className="h-5 w-20 bg-white/[0.05] rounded-lg animate-pulse" />
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="h-4 w-28 bg-slate-100 rounded animate-pulse" />
+          <div className="h-4 w-16 bg-slate-100 rounded animate-pulse" />
         </div>
-        <div className="divide-y divide-white/[0.04]">
+        <div className="divide-y divide-slate-100">
           {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="p-4 flex items-center justify-between space-x-4">
-              <div className="flex items-center space-x-4 flex-1">
-                <div className="h-7 w-20 bg-white/[0.05] rounded-lg animate-pulse" />
-                <div className="space-y-2 flex-1 max-w-md">
-                  <div className="h-4 w-3/4 bg-white/[0.06] rounded animate-pulse" />
-                  <div className="h-3 w-1/2 bg-white/[0.03] rounded animate-pulse" />
+              <div className="flex items-center space-x-3 flex-1">
+                <div className="h-6 w-16 bg-slate-100 rounded animate-pulse" />
+                <div className="space-y-1.5 flex-1 max-w-md">
+                  <div className="h-3.5 w-3/4 bg-slate-100 rounded animate-pulse" />
+                  <div className="h-3 w-1/2 bg-slate-100 rounded animate-pulse" />
                 </div>
               </div>
-              <div className="h-7 w-24 bg-white/[0.05] rounded-full animate-pulse" />
+              <div className="h-6 w-20 bg-slate-100 rounded-full animate-pulse" />
             </div>
           ))}
         </div>
@@ -41,15 +41,15 @@ export const TicketList = ({
   // 2. Error State
   if (error) {
     return (
-      <div className="bg-slate-900/60 backdrop-blur-xl border border-rose-500/30 rounded-2xl p-8 text-center shadow-lg">
-        <div className="w-12 h-12 bg-rose-500/10 text-rose-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-rose-500/20">
-          <AlertCircle className="w-6 h-6" />
+      <div className="bg-white border border-rose-200 rounded-xl p-8 text-center shadow-2xs">
+        <div className="w-10 h-10 bg-rose-50 text-rose-500 rounded-lg flex items-center justify-center mx-auto mb-3 border border-rose-100">
+          <AlertCircle className="w-5 h-5" />
         </div>
-        <h3 className="text-base font-bold text-white mb-1">Failed to load tickets</h3>
-        <p className="text-xs text-slate-400 max-w-md mx-auto mb-5">{error}</p>
+        <h3 className="text-sm font-semibold text-slate-900 mb-1">Failed to load tickets</h3>
+        <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">{error}</p>
         <button
           onClick={onRetry}
-          className="inline-flex items-center px-4 py-2 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl transition shadow-sm"
+          className="inline-flex items-center px-3.5 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-2xs transition"
         >
           Try again
         </button>
@@ -60,19 +60,19 @@ export const TicketList = ({
   // 3. Empty State (Filter matches 0 results)
   if (tickets.length === 0 && hasFilters) {
     return (
-      <div className="bg-slate-900/50 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-10 text-center shadow-sm">
-        <div className="w-12 h-12 bg-white/[0.04] text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-white/[0.06]">
-          <Inbox className="w-6 h-6" />
+      <div className="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-2xs">
+        <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center mx-auto mb-3 border border-slate-100">
+          <Inbox className="w-5 h-5" />
         </div>
-        <h3 className="text-sm font-bold text-white mb-1">No matching tickets found</h3>
-        <p className="text-xs text-slate-400 max-w-sm mx-auto mb-4">
-          No tickets match your active search or status filter. Try clearing or adjusting your criteria.
+        <h3 className="text-sm font-semibold text-slate-900 mb-1">No matching tickets</h3>
+        <p className="text-xs text-slate-500 max-w-sm mx-auto mb-3">
+          No tickets match your active search query or status filter.
         </p>
         <button
           onClick={onResetFilters}
-          className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 underline transition"
+          className="text-xs font-medium text-blue-600 hover:text-blue-700 transition"
         >
-          Clear all filters
+          Clear filters
         </button>
       </div>
     );
@@ -81,20 +81,20 @@ export const TicketList = ({
   // 4. Empty State (Zero tickets in database)
   if (tickets.length === 0) {
     return (
-      <div className="bg-slate-900/40 backdrop-blur-xl border border-dashed border-white/[0.12] rounded-2xl p-12 text-center">
-        <div className="w-14 h-14 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-500/30 shadow-md">
-          <Inbox className="w-7 h-7" />
+      <div className="bg-white border border-dashed border-slate-200 rounded-xl p-10 text-center">
+        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center mx-auto mb-3 border border-blue-100">
+          <Inbox className="w-5 h-5" />
         </div>
-        <h3 className="text-base font-bold text-white mb-1">No customer tickets yet</h3>
-        <p className="text-xs text-slate-400 max-w-md mx-auto mb-6">
-          The support inbox is clear. When a customer reaches out, log their first ticket to track resolution and communication.
+        <h3 className="text-sm font-semibold text-slate-900 mb-1">No customer tickets yet</h3>
+        <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+          The support inbox is empty. Create your first ticket to start tracking customer issues.
         </p>
         <button
           onClick={onOpenCreate}
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white text-xs font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20 transition duration-150"
+          className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-lg shadow-2xs transition"
         >
-          <span>Create First Ticket</span>
-          <ArrowRight className="w-4 h-4" />
+          <span>Create Ticket</span>
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
     );
@@ -108,17 +108,16 @@ export const TicketList = ({
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
-  // 5. Normal Table Layout
+  // 5. Clean White Table Layout
   return (
-    <div className="bg-slate-900/50 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-sm overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden">
       
       {/* Section Header */}
-      <div className="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between">
+      <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-bold text-white tracking-tight">Recent Tickets</h2>
-          <p className="text-xs text-slate-400">Manage and monitor all customer inquiries across channels</p>
+          <h2 className="text-sm font-semibold text-slate-900 tracking-tight">Recent Tickets</h2>
         </div>
-        <span className="text-xs font-medium text-slate-400 bg-white/[0.04] px-2.5 py-1 rounded-lg border border-white/[0.05]">
+        <span className="text-xs text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
           {tickets.length} ticket{tickets.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -127,16 +126,16 @@ export const TicketList = ({
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-white/[0.02] border-b border-white/[0.06] text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-              <th className="py-3 px-4 sm:px-6">Ticket ID</th>
-              <th className="py-3 px-4">Customer</th>
-              <th className="py-3 px-4">Subject</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4 sm:px-6 text-right">Created</th>
-              <th className="py-3 px-3 text-right"></th>
+            <tr className="bg-slate-50/60 border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <th className="py-2.5 px-4 sm:px-5">Ticket ID</th>
+              <th className="py-2.5 px-4">Customer</th>
+              <th className="py-2.5 px-4">Subject</th>
+              <th className="py-2.5 px-4">Status</th>
+              <th className="py-2.5 px-4 sm:px-5 text-right">Created</th>
+              <th className="py-2.5 px-3 text-right"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.04] text-xs">
+          <tbody className="divide-y divide-slate-100 text-xs">
             {tickets.map((t) => {
               const formattedDate = new Date(t.created_at).toLocaleDateString('en-US', {
                 month: 'short',
@@ -148,28 +147,27 @@ export const TicketList = ({
                 <tr
                   key={t.ticket_id}
                   onClick={() => onSelectTicket(t.ticket_id)}
-                  className="hover:bg-white/[0.04] cursor-pointer transition-colors duration-150 group"
+                  className="hover:bg-slate-50/80 cursor-pointer transition-colors duration-100 group"
                 >
                   {/* Ticket ID */}
-                  <td className="py-4 px-4 sm:px-6 whitespace-nowrap">
-                    <span className="font-mono text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-950/40 text-cyan-300 border border-indigo-500/20 group-hover:border-indigo-500/40 transition">
+                  <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
+                    <span className="font-mono text-xs font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">
                       {t.ticket_id}
                     </span>
                   </td>
 
                   {/* Customer */}
-                  <td className="py-4 px-4 whitespace-nowrap">
+                  <td className="py-3 px-4 whitespace-nowrap">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow-sm">
+                      <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 font-medium text-[10px] flex items-center justify-center shrink-0 border border-slate-200">
                         {getInitials(t.customer_name)}
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-semibold text-slate-200 group-hover:text-white transition">
+                        <span className="font-medium text-slate-800 group-hover:text-slate-900 transition">
                           {t.customer_name}
                         </span>
                         {t.customer_email && (
                           <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                            <Mail className="w-2.5 h-2.5 text-slate-500" />
                             {t.customer_email}
                           </span>
                         )}
@@ -178,28 +176,25 @@ export const TicketList = ({
                   </td>
 
                   {/* Subject */}
-                  <td className="py-4 px-4 max-w-xs sm:max-w-md">
-                    <p className="font-medium text-slate-300 group-hover:text-white line-clamp-1 transition">
+                  <td className="py-3 px-4 max-w-xs sm:max-w-md">
+                    <p className="font-normal text-slate-700 group-hover:text-slate-900 line-clamp-1">
                       {t.subject}
                     </p>
                   </td>
 
                   {/* Status */}
-                  <td className="py-4 px-4 whitespace-nowrap">
+                  <td className="py-3 px-4 whitespace-nowrap">
                     <StatusBadge status={t.status} />
                   </td>
 
                   {/* Created Date */}
-                  <td className="py-4 px-4 sm:px-6 text-right whitespace-nowrap text-[11px] text-slate-400">
-                    <div className="inline-flex items-center gap-1.5">
-                      <Calendar className="w-3 h-3 text-slate-500" />
-                      <span>{formattedDate}</span>
-                    </div>
+                  <td className="py-3 px-4 sm:px-5 text-right whitespace-nowrap text-[11px] text-slate-400">
+                    <span>{formattedDate}</span>
                   </td>
 
                   {/* Action Arrow */}
-                  <td className="py-4 px-3 text-right whitespace-nowrap text-slate-500 group-hover:text-indigo-400 transition pr-4">
-                    <ChevronRight className="w-4 h-4 inline group-hover:translate-x-0.5 transition-transform" />
+                  <td className="py-3 px-3 text-right whitespace-nowrap text-slate-400 group-hover:text-slate-600 transition pr-4">
+                    <ChevronRight className="w-4 h-4 inline" />
                   </td>
                 </tr>
               );
@@ -209,9 +204,9 @@ export const TicketList = ({
       </div>
 
       {/* Table Footer */}
-      <div className="px-6 py-3 bg-white/[0.01] border-t border-white/[0.04] flex items-center justify-between text-[11px] text-slate-400">
+      <div className="px-5 py-2.5 bg-slate-50/40 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
         <span>Showing {tickets.length} ticket{tickets.length !== 1 ? 's' : ''}</span>
-        <span className="text-slate-500">Click any row to open details & log internal notes</span>
+        <span className="text-slate-400">Select any ticket to view details & log internal notes</span>
       </div>
     </div>
   );
