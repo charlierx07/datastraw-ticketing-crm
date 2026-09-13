@@ -115,5 +115,74 @@ class AIService:
 
     @staticmethod
     def _call_external_ai(customer_name: str, subject: str, description: str) -> Dict[str, str]:
+        if settings.AI_PROVIDER.lower() == "gemini":
+            return AIService._call_gemini_ai(customer_name, subject, description)
         # Fallback to heuristic analysis if any error occurs
+        return AIService._heuristic_analysis(customer_name, subject, description)
+
+    @staticmethod
+    def _call_gemini_ai(customer_name: str, subject: str, description: str) -> Dict[str, str]:
+        """
+        Calls Google Gemini 1.5 Flash API via HTTP REST using httpx.
+        Uses structured JSON response format.
+        Falls back to heuristics if timeout, quota error, or invalid key occurs.
+        """
+        import httpx
+        import json
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.AI_API_KEY}"
+        prompt = (
+            f"You are an AI customer support assistant. Analyze the following customer support ticket and return a JSON object:\n"
+            f"Customer Name: {customer_name}\n"
+            f"Subject: {subject}\n"
+            f"Description: {description}\n\n"
+            f"Return ONLY a JSON object with these exact keys:\n"
+            f"- 'category': One of 'Billing & Refund', 'Shipping & Logistics', 'Technical Support', 'Product Issue', 'General Inquiry'\n"
+            f"- 'priority': One of 'High', 'Medium', 'Low'\n"
+            f"- 'sentiment': One of 'Negative', 'Neutral', 'Positive'\n"
+            f"- 'suggested_response': A helpful, empathetic, professional initial reply addressing the customer by name ({customer_name})."
+        )
+
+        payload = {
+            "contents": [
+                {
+                    "parts": [{"text": prompt}]
+                }
+            ],
+            "generationConfig": {
+                "response_mime_type": "application/json",
+                "temperature": 0.2
+            }
+        }
+
+        try:
+            resp = httpx.post(url, json=payload, timeout=6.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                text_response = data["candidates"][0]["content"]["parts"][0]["text"]
+                parsed = json.loads(text_response)
+
+                valid_categories = ["Billing & Refund", "Shipping & Logistics", "Technical Support", "Product Issue", "General Inquiry"]
+                valid_priorities = ["High", "Medium", "Low"]
+                valid_sentiments = ["Negative", "Neutral", "Positive"]
+
+                category = parsed.get("category") if parsed.get("category") in valid_categories else "General Inquiry"
+                priority = parsed.get("priority") if parsed.get("priority") in valid_priorities else "Medium"
+                sentiment = parsed.get("sentiment") if parsed.get("sentiment") in valid_sentiments else "Neutral"
+                suggested_response = parsed.get("suggested_response", "").strip()
+
+                if not suggested_response:
+                    suggested_response = f"Hi {customer_name}, thank you for contacting support. We have received your inquiry regarding '{subject}' and are looking into it."
+
+                return {
+                    "category": category,
+                    "priority": priority,
+                    "sentiment": sentiment,
+                    "suggested_response": suggested_response
+                }
+            else:
+                logger.warning(f"Gemini API returned status {resp.status_code}: {resp.text[:200]}")
+        except Exception as e:
+            logger.warning(f"Gemini API call failed, falling back to heuristics: {e}")
+
         return AIService._heuristic_analysis(customer_name, subject, description)
