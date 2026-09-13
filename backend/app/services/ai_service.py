@@ -90,8 +90,8 @@ class AIService:
             )
         elif category == "Billing & Refund":
             suggested_response = (
-                f"Hi {first_name}, we appreciate your patience regarding this matter. We have initiated a review with our accounts department "
-                "to trace the transaction and expedite your refund. You will receive an official notification once processed."
+                f"Hi {first_name}, thank you for reaching out. I'm sorry for the duplicate charge. "
+                "Our billing team will review the transaction and assist with the refund process."
             )
         elif category == "Technical Support":
             suggested_response = (
@@ -123,25 +123,32 @@ class AIService:
     @staticmethod
     def _call_gemini_ai(customer_name: str, subject: str, description: str) -> Dict[str, str]:
         """
-        Calls Google Gemini API via HTTP REST using httpx.
+        Calls Google Gemini API via HTTP REST using httpx with robust formatting and parsing.
         Uses structured JSON response format.
         Falls back to heuristics with clear 'fallback' label if timeout, quota error, or invalid key occurs.
         """
         import httpx
         import json
+        import re
 
         api_key = settings.gemini_api_key
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
         prompt = (
-            f"You are an AI customer support assistant. Analyze the following customer support ticket and return a JSON object:\n"
+            "You are an AI customer support assistant for a SaaS CRM.\n"
+            "Analyze the following customer support ticket and return a strict, valid JSON object.\n\n"
             f"Customer Name: {customer_name}\n"
             f"Subject: {subject}\n"
             f"Description: {description}\n\n"
-            f"Return ONLY a JSON object with these exact keys:\n"
-            f"- 'category': One of 'Billing & Refund', 'Shipping & Logistics', 'Technical Support', 'Product Issue', 'General Inquiry'\n"
-            f"- 'priority': One of 'High', 'Medium', 'Low'\n"
-            f"- 'sentiment': One of 'Negative', 'Neutral', 'Positive'\n"
-            f"- 'suggested_response': A helpful, empathetic, professional initial reply addressing the customer by name ({customer_name})."
+            "Formatting & Content Rules for 'suggested_response':\n"
+            "1. Plain Text Spacing: Output natural, readable English. Always preserve normal spaces between all words, numbers, dates, punctuation, and currency amounts. Never merge or run numbers and words together (e.g. write '$120 on September 12th', NEVER '120onSeptember12th').\n"
+            "2. Honest Scope: Do NOT invent or claim actions that have not been performed yet. Do NOT say 'I have initiated a refund' or 'I have cancelled the charge' unless the customer's text confirms that has already occurred.\n"
+            "3. Expected Tone for billing/charge disputes: Acknowledge the problem with empathy, and say something like:\n"
+            "   'I’m sorry for the duplicate charge. Our billing team will review the transaction and assist with the refund process.'\n"
+            "4. Address the customer respectfully by their name.\n\n"
+            "Required JSON fields:\n"
+            "- 'category': One of 'Billing & Refund', 'Shipping & Logistics', 'Technical Support', 'Product Issue', 'General Inquiry'\n"
+            "- 'priority': One of 'High', 'Medium', 'Low'\n"
+            "- 'sentiment': One of 'Negative', 'Neutral', 'Positive'\n"
+            "- 'suggested_response': Properly formatted, professional first reply string."
         )
 
         payload = {
@@ -156,36 +163,54 @@ class AIService:
             }
         }
 
-        try:
-            resp = httpx.post(url, json=payload, timeout=12.0)
-            if resp.status_code == 200:
-                data = resp.json()
-                text_response = data["candidates"][0]["content"]["parts"][0]["text"]
-                parsed = json.loads(text_response)
+        # Candidate models list: attempts gemini-3.5-flash first, then gemini-flash-latest, then gemini-3.6-flash
+        candidate_models = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.6-flash"]
 
-                valid_categories = ["Billing & Refund", "Shipping & Logistics", "Technical Support", "Product Issue", "General Inquiry"]
-                valid_priorities = ["High", "Medium", "Low"]
-                valid_sentiments = ["Negative", "Neutral", "Positive"]
+        for model in candidate_models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            try:
+                resp = httpx.post(url, json=payload, timeout=12.0)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    text_response = data["candidates"][0]["content"]["parts"][0]["text"].strip()
 
-                category = parsed.get("category") if parsed.get("category") in valid_categories else "General Inquiry"
-                priority = parsed.get("priority") if parsed.get("priority") in valid_priorities else "Medium"
-                sentiment = parsed.get("sentiment") if parsed.get("sentiment") in valid_sentiments else "Neutral"
-                suggested_response = parsed.get("suggested_response", "").strip()
+                    # Robust cleaning if wrapped in markdown code fence
+                    if text_response.startswith("```"):
+                        text_response = re.sub(r"^```(?:json)?\s*", "", text_response)
+                        text_response = re.sub(r"\s*```$", "", text_response)
 
-                if not suggested_response:
-                    suggested_response = f"Hi {customer_name}, thank you for contacting support. We have received your inquiry regarding '{subject}' and are looking into it."
+                    parsed = json.loads(text_response)
 
-                return {
-                    "category": category,
-                    "priority": priority,
-                    "sentiment": sentiment,
-                    "suggested_response": suggested_response,
-                    "ai_source": "gemini"
-                }
-            else:
-                logger.warning(f"Gemini API returned status {resp.status_code}: {resp.text[:200]}")
-        except Exception as e:
-            logger.warning(f"Gemini API call failed, falling back to heuristics: {e}")
+                    valid_categories = ["Billing & Refund", "Shipping & Logistics", "Technical Support", "Product Issue", "General Inquiry"]
+                    valid_priorities = ["High", "Medium", "Low"]
+                    valid_sentiments = ["Negative", "Neutral", "Positive"]
+
+                    category = parsed.get("category") if parsed.get("category") in valid_categories else "General Inquiry"
+                    priority = parsed.get("priority") if parsed.get("priority") in valid_priorities else "Medium"
+                    sentiment = parsed.get("sentiment") if parsed.get("sentiment") in valid_sentiments else "Neutral"
+                    suggested_response = str(parsed.get("suggested_response", "")).strip()
+
+                    # Clean any accidental math formatting delimiters while preserving symbols and numbers
+                    suggested_response = suggested_response.replace(r"\$", "$")
+
+                    if not suggested_response:
+                        suggested_response = f"Hi {customer_name}, thank you for contacting support. Our team is reviewing your inquiry regarding '{subject}' and will assist you shortly."
+
+                    return {
+                        "category": category,
+                        "priority": priority,
+                        "sentiment": sentiment,
+                        "suggested_response": suggested_response,
+                        "ai_source": "gemini"
+                    }
+                else:
+                    logger.warning(f"Model {model} returned status {resp.status_code}: {resp.text[:150]}")
+                    # If 429 quota or 503 unavailable, try next candidate model
+                    if resp.status_code in [429, 503]:
+                        continue
+            except Exception as e:
+                logger.warning(f"Gemini call to {model} failed: {e}")
+                continue
 
         fallback = AIService._heuristic_analysis(customer_name, subject, description)
         fallback["ai_source"] = "fallback"

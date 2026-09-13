@@ -406,7 +406,7 @@ export const TicketDetail = ({ ticketId, onBack, onTicketUpdated }) => {
                     </button>
                   </div>
                 </div>
-                <p className="text-xs text-slate-600 italic leading-relaxed">
+                <p className="text-xs text-slate-700 italic leading-relaxed whitespace-pre-wrap break-words font-sans">
                   "{ticket.ai_suggested_response}"
                 </p>
               </div>
