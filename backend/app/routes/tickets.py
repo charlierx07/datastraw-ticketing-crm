@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -10,10 +11,16 @@ from app.schemas.ticket import (
     TicketDetailResponse,
     TicketUpdate,
     TicketUpdateResponse,
+    NoteCreate,
+    NoteResponse,
 )
 from app.services.ticket_service import TicketService
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/tickets", tags=["Tickets"])
+
+VALID_STATUSES = ["Open", "In Progress", "Closed"]
 
 
 @router.post(
@@ -34,10 +41,11 @@ def create_ticket(
             created_at=created_ticket.created_at
         )
     except Exception as e:
+        logger.error(f"Error creating ticket: {e}", exc_info=True)
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create ticket: {str(e)}"
+            detail="Failed to create ticket due to an internal server error."
         )
 
 
@@ -89,6 +97,17 @@ def update_ticket(
     ticket_update: TicketUpdate,
     db: Session = Depends(get_db)
 ):
+    # Validate status if provided: must be Open, In Progress, or Closed (HTTP 400 Bad Request)
+    if ticket_update.status is not None:
+        clean_status = ticket_update.status.strip()
+        matched_status = next((s for s in VALID_STATUSES if s.lower() == clean_status.lower()), None)
+        if not matched_status:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid status '{ticket_update.status}'. Allowed values are: {', '.join(VALID_STATUSES)}."
+            )
+        ticket_update.status = matched_status
+
     updated_ticket = TicketService.update_ticket(
         db=db,
         ticket_id=ticket_id,
@@ -104,6 +123,31 @@ def update_ticket(
         success=True,
         updated_at=updated_ticket.updated_at
     )
+
+
+@router.post(
+    "/{ticket_id}/notes",
+    response_model=NoteResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add an internal note to a ticket",
+    description="Appends a new chronological internal note to the ticket."
+)
+def add_note(
+    ticket_id: str,
+    note_in: NoteCreate,
+    db: Session = Depends(get_db)
+):
+    note = TicketService.add_note_to_ticket(
+        db=db,
+        ticket_id=ticket_id,
+        note_text=note_in.note_text
+    )
+    if not note:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Ticket '{ticket_id}' not found."
+        )
+    return note
 
 
 @router.post(

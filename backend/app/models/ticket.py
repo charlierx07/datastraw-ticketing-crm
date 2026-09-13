@@ -14,12 +14,12 @@ class Ticket(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     ticket_id = Column(String(20), unique=True, index=True, nullable=False)
-    customer_name = Column(String(100), nullable=False)
+    customer_name = Column(String(100), nullable=False, index=True)
     customer_email = Column(String(255), nullable=False, index=True)
     subject = Column(String(200), nullable=False)
     description = Column(Text, nullable=False)
     status = Column(String(20), default="Open", nullable=False, index=True)
-    created_at = Column(DateTime(timezone=True), default=get_utc_now, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=get_utc_now, nullable=False, index=True)
     updated_at = Column(DateTime(timezone=True), default=get_utc_now, onupdate=get_utc_now, nullable=False)
 
     # Standout AI feature fields (isolated, nullable so CRUD never fails)
@@ -28,11 +28,12 @@ class Ticket(Base):
     ai_sentiment = Column(String(20), nullable=True)
     ai_suggested_response = Column(Text, nullable=True)
 
-    # 1-to-Many Relationship with notes
+    # 1-to-Many Relationship with notes (cascading delete)
     notes = relationship(
         "Note",
         back_populates="ticket",
         cascade="all, delete-orphan",
+        passive_deletes=True,
         order_by="desc(Note.created_at)"
     )
 
@@ -43,7 +44,7 @@ class Note(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     ticket_id = Column(String(20), ForeignKey("tickets.ticket_id", ondelete="CASCADE"), nullable=False, index=True)
     note_text = Column(Text, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=get_utc_now, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=get_utc_now, nullable=False, index=True)
 
     # Relationship back to Ticket
     ticket = relationship("Ticket", back_populates="notes")

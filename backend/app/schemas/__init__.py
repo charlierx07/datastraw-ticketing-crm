@@ -6,6 +6,7 @@ from app.schemas.ticket import (
     TicketDetailResponse,
     TicketUpdate,
     TicketUpdateResponse,
+    NoteCreate,
     NoteResponse
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "TicketDetailResponse",
     "TicketUpdate",
     "TicketUpdateResponse",
+    "NoteCreate",
     "NoteResponse"
 ]

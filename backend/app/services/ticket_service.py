@@ -141,3 +141,32 @@ class TicketService:
         db.commit()
         db.refresh(ticket)
         return ticket
+
+    @staticmethod
+    def add_note_to_ticket(db: Session, ticket_id: str, note_text: str) -> Optional[Note]:
+        """Appends a new chronological note to a ticket."""
+        ticket = TicketService.get_ticket_by_id(db, ticket_id)
+        if not ticket:
+            return None
+
+        now = datetime.now(timezone.utc)
+        note = Note(
+            ticket_id=ticket.ticket_id,
+            note_text=note_text.strip(),
+            created_at=now
+        )
+        db.add(note)
+        ticket.updated_at = now
+        db.commit()
+        db.refresh(note)
+        return note
+
+    @staticmethod
+    def delete_ticket(db: Session, ticket_id: str) -> bool:
+        """Deletes a ticket and cascades deletion to all associated notes."""
+        ticket = TicketService.get_ticket_by_id(db, ticket_id)
+        if not ticket:
+            return False
+        db.delete(ticket)
+        db.commit()
+        return True

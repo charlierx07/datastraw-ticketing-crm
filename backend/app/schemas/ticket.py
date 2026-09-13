@@ -34,6 +34,20 @@ class TicketCreateResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class NoteCreate(BaseModel):
+    note_text: str = Field(..., min_length=1, description="Content of internal support note")
+
+    @field_validator("note_text", mode="before")
+    @classmethod
+    def strip_and_validate_non_empty(cls, v: str) -> str:
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if not v_stripped:
+                raise ValueError("Note text cannot be empty or only whitespace")
+            return v_stripped
+        return v
+
+
 class NoteResponse(BaseModel):
     id: int
     ticket_id: str
@@ -75,18 +89,6 @@ class TicketDetailResponse(BaseModel):
 class TicketUpdate(BaseModel):
     status: Optional[str] = None
     notes: Optional[str] = None
-
-    @field_validator("status")
-    @classmethod
-    def validate_status(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None:
-            valid_statuses = [s.value for s in TicketStatus]
-            # Match case-insensitively to exact canonical casing
-            match = next((s for s in valid_statuses if s.lower() == v.strip().lower()), None)
-            if not match:
-                raise ValueError(f"Invalid status '{v}'. Allowed values are: {', '.join(valid_statuses)}")
-            return match
-        return v
 
 
 class TicketUpdateResponse(BaseModel):

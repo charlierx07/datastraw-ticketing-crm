@@ -6,6 +6,13 @@ Built for the **AI + Tech Intern Hiring Evaluation at Datastraw Technologies**.
 
 ---
 
+## Deployment & Repository Links
+
+- **Live Application URL**: `https://your-railway-app.up.railway.app` *(Placeholder - configured upon Railway deploy)*
+- **GitHub Repository**: `https://github.com/your-username/datastraw-crm` *(Placeholder)*
+
+---
+
 ## Architecture Overview
 
 ```
@@ -25,13 +32,77 @@ Built for the **AI + Tech Intern Hiring Evaluation at Datastraw Technologies**.
                   │   └── AIService (Fault-Tolerant Engine) │
                   └────────────────────┬────────────────────┘
                                        │
-                               SQLAlchemy 2.0
+                                SQLAlchemy 2.0
+                          (PRAGMA foreign_keys = ON)
                                        │
                   ┌────────────────────▼────────────────────┐
                   │             SQLite Database             │
                   │   ├── tickets (PK id, ticket_id, ...)   │
                   │   └── notes (PK id, FK ticket_id, ...)  │
                   └─────────────────────────────────────────┘
+```
+
+---
+
+## Folder Structure
+
+```text
+datastraw/
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── config.py             # Settings via Pydantic BaseSettings
+│   │   ├── database.py           # Engine, SQLite PRAGMA hook, sessionmaker
+│   │   ├── main.py               # FastAPI entrypoint, CORS, lifespan, SPA serving
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   └── ticket.py         # SQLAlchemy Ticket & Note models
+│   │   ├── routes/
+│   │   │   ├── __init__.py
+│   │   │   └── tickets.py        # REST endpoints (/api/tickets)
+│   │   ├── schemas/
+│   │   │   ├── __init__.py
+│   │   │   └── ticket.py         # Pydantic request/response schemas
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── ai_service.py     # Fault-tolerant ticket intelligence
+│   │   │   └── ticket_service.py # Core business & query logic
+│   │   └── utils/
+│   │       ├── __init__.py
+│   │       └── ticket_id.py      # Unique TKT-001 ID sequence generator
+│   ├── tests/
+│   │   ├── test_api.py           # Integration tests for all CRUD & validation
+│   │   ├── test_health.py        # Healthcheck endpoint test
+│   │   ├── test_models.py        # Model and relationship tests
+│   │   └── manual_e2e.py         # Full live server verification script
+│   ├── pytest.ini
+│   ├── requirements.txt
+│   └── .env.example
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Badge.jsx         # Status, priority & sentiment badges
+│   │   │   ├── CreateTicketModal.jsx # Form with live field validation
+│   │   │   ├── Navbar.jsx        # App header & server connectivity indicator
+│   │   │   ├── SearchBar.jsx     # Debounced search & status filter tabs
+│   │   │   ├── StatCards.jsx     # KPI summary cards (Total, Open, In Progress, Closed)
+│   │   │   ├── TicketDetail.jsx  # Detailed ticket view, status switcher & notes
+│   │   │   └── TicketList.jsx    # Table layout with loading/empty states
+│   │   ├── services/
+│   │   │   └── api.js            # API client with production-safe relative fallback
+│   │   ├── App.jsx               # Root application router and state
+│   │   ├── index.css             # Tailwind directives
+│   │   └── main.jsx              # React DOM mounting
+│   ├── package.json
+│   ├── postcss.config.js
+│   ├── tailwind.config.js
+│   ├── vite.config.js
+│   └── index.html
+├── Dockerfile                    # Multi-stage production container build
+├── railway.json                  # Railway deployment configuration
+├── walkthrough.md                # Comprehensive technical interview guide
+├── README.md                     # Documentation
+└── .gitignore                    # Robust hygiene rules (no venv, node_modules, db, secrets)
 ```
 
 ---
@@ -60,6 +131,7 @@ Built for the **AI + Tech Intern Hiring Evaluation at Datastraw Technologies**.
    - One-click status switcher (`Open` &rarr; `In Progress` &rarr; `Closed`).
 6. **Internal Collaboration Notes**:
    - Support agents can log internal timeline notes without modifying or overwriting previous notes.
+   - Supported both via `PUT /api/tickets/{ticket_id}` and `POST /api/tickets/{ticket_id}/notes`.
    - Auto-timestamped chronological notes history.
 7. **Health & Readiness Check**:
    - `GET /health` endpoint for monitoring and cloud healthchecks.
@@ -68,20 +140,7 @@ Built for the **AI + Tech Intern Hiring Evaluation at Datastraw Technologies**.
 - Automatically categorizes tickets (e.g. *Shipping & Logistics*, *Billing & Refund*, *Technical Support*).
 - Predicts issue priority (*High*, *Medium*, *Low*) and customer sentiment (*Positive*, *Neutral*, *Negative*).
 - Generates a drafted suggested agent response that can be copied or applied as an internal note in one click.
-- **Resilience Guarantee**: If the AI model or API is unavailable, ticket creation and CRM CRUD continue 100% uninterrupted.
-
----
-
-## Tech Stack
-
-| Layer | Technology | Rationale |
-|---|---|---|
-| **Backend** | Python 3.12, FastAPI, Uvicorn | High performance asynchronous REST API with automatic OpenAPI documentation and strict type annotations. |
-| **Data Validation** | Pydantic V2 | Type enforcement, email format validation, and standardized HTTP error serialization. |
-| **Database & ORM** | SQLite 3, SQLAlchemy 2.0 | Lightweight, zero-config relational database with explicit foreign key relationships and volume mount support. |
-| **Frontend** | React 18, Vite | Fast development experience, instant HMR, and optimized production bundle. |
-| **Styling** | Tailwind CSS v3, Lucide Icons | Responsive internal tool UI with clear badge semantics and clean typography. |
-| **Deployment** | Docker & Railway.app | Multi-stage Docker build packaging frontend SPA and backend API into a unified deployable service. |
+- **Honest Architectural Guarantee**: Implemented using a deterministic heuristic classification engine with optional external LLM provider integration. Wrapped in top-level exception barriers so third-party failures can never prevent ticket creation or CRM CRUD.
 
 ---
 
@@ -93,12 +152,12 @@ Built for the **AI + Tech Intern Hiring Evaluation at Datastraw Technologies**.
 ├───────────────────────────────────────┤         ├───────────────────────────────────────┤
 │ id                    INTEGER (PK)    │ 1     * │ id                    INTEGER (PK)    │
 │ ticket_id             VARCHAR (UNIQUE)├─────────┤ ticket_id             VARCHAR (FK)    │
-│ customer_name         VARCHAR (NOT NULL)│       │ note_text             TEXT (NOT NULL) │
-│ customer_email        VARCHAR (NOT NULL)│       │ created_at            DATETIME        │
-│ subject               VARCHAR (NOT NULL)│       └───────────────────────────────────────┘
+│ customer_name         VARCHAR (INDEX) │         │ note_text             TEXT (NOT NULL) │
+│ customer_email        VARCHAR (INDEX) │         │ created_at            DATETIME (INDEX)│
+│ subject               VARCHAR (NOT NULL│        └───────────────────────────────────────┘
 │ description           TEXT (NOT NULL) │
-│ status                VARCHAR (NOT NULL)│
-│ created_at            DATETIME        │
+│ status                VARCHAR (INDEX) │
+│ created_at            DATETIME (INDEX)│
 │ updated_at            DATETIME        │
 │ ai_category           VARCHAR (NULL)  │
 │ ai_priority           VARCHAR (NULL)  │
@@ -109,127 +168,58 @@ Built for the **AI + Tech Intern Hiring Evaluation at Datastraw Technologies**.
 
 - **One-to-Many Relationship**: One `Ticket` has zero or many `Notes`. Deleting a ticket cascades to its associated notes (`ondelete="CASCADE"`).
 - **Sequential Ticket IDs**: Enforced with regex-based auto-incrementing logic (`TKT-001`, `TKT-002`, ...).
+- **SQLite Foreign Keys**: Explicitly enabled on every connection via SQLAlchemy connection listener (`PRAGMA foreign_keys=ON;`).
 
 ---
 
 ## API Documentation
 
-### 1. Health Check
-```http
-GET /health
-```
-**Response (200 OK):**
-```json
-{
-  "status": "ok"
-}
-```
+| Method | Endpoint | Success Status | Description |
+|---|---|---|---|
+| `GET` | `/health` | 200 | Health check for readiness monitoring |
+| `POST` | `/api/tickets` | 201 | Create ticket with auto-generated ID & timestamps |
+| `GET` | `/api/tickets` | 200 | List tickets with optional `?status=` and `?search=` filters |
+| `GET` | `/api/tickets/{ticket_id}` | 200 | Retrieve full ticket details and notes history |
+| `PUT` | `/api/tickets/{ticket_id}` | 200 | Update status and/or append internal note |
+| `POST` | `/api/tickets/{ticket_id}/notes` | 201 | Dedicated endpoint to add an internal note |
+| `POST` | `/api/tickets/{ticket_id}/ai-insights` | 200 | Generate or re-analyze AI ticket insights |
 
----
+### Example Curl Commands
 
-### 2. Create Ticket
-```http
-POST /api/tickets
-Content-Type: application/json
-```
-**Request Body:**
-```json
-{
-  "customer_name": "Rahul Sharma",
-  "customer_email": "rahul@gmail.com",
-  "subject": "Order has not arrived",
-  "description": "My order was expected yesterday but I haven't received it."
-}
-```
-**Response (201 Created):**
-```json
-{
-  "ticket_id": "TKT-001",
-  "created_at": "2026-09-12T14:19:40.123456Z"
-}
-```
-
----
-
-### 3. List & Search Tickets
-```http
-GET /api/tickets?status=Open&search=Rahul
-```
-**Response (200 OK):**
-```json
-[
-  {
-    "ticket_id": "TKT-001",
+#### 1. Create Ticket
+```bash
+curl -X POST http://localhost:8000/api/tickets \
+  -H "Content-Type: application/json" \
+  -d '{
     "customer_name": "Rahul Sharma",
     "customer_email": "rahul@gmail.com",
     "subject": "Order has not arrived",
-    "status": "Open",
-    "created_at": "2026-09-12T14:19:40.123456Z"
-  }
-]
+    "description": "My order was expected yesterday but I have not received it."
+  }'
 ```
 
----
+#### 2. Search and Filter Tickets
+```bash
+# Search by name with status filter
+curl "http://localhost:8000/api/tickets?status=Open&search=Rahul"
 
-### 4. Get Ticket Details
-```http
-GET /api/tickets/TKT-001
-```
-**Response (200 OK):**
-```json
-{
-  "ticket_id": "TKT-001",
-  "customer_name": "Rahul Sharma",
-  "customer_email": "rahul@gmail.com",
-  "subject": "Order has not arrived",
-  "description": "My order was expected yesterday but I haven't received it.",
-  "status": "Open",
-  "created_at": "2026-09-12T14:19:40.123456Z",
-  "updated_at": "2026-09-12T14:19:40.123456Z",
-  "notes": [
-    {
-      "id": 1,
-      "ticket_id": "TKT-001",
-      "note_text": "Contacted logistics hub.",
-      "created_at": "2026-09-12T14:21:00.000000Z"
-    }
-  ],
-  "ai_category": "Shipping & Logistics",
-  "ai_priority": "High",
-  "ai_sentiment": "Negative",
-  "ai_suggested_response": "Hi Rahul, thank you for reaching out..."
-}
+# Search by ticket ID
+curl "http://localhost:8000/api/tickets?search=TKT-001"
 ```
 
----
-
-### 5. Update Ticket Status & Add Note
-```http
-PUT /api/tickets/TKT-001
-Content-Type: application/json
-```
-**Request Body:**
-```json
-{
-  "status": "In Progress",
-  "notes": "Contacted courier support. Driver out for redelivery."
-}
-```
-**Response (200 OK):**
-```json
-{
-  "success": true,
-  "updated_at": "2026-09-12T14:22:15.654321Z"
-}
+#### 3. Update Status
+```bash
+curl -X PUT http://localhost:8000/api/tickets/TKT-001 \
+  -H "Content-Type: application/json" \
+  -d '{"status": "In Progress"}'
 ```
 
----
-
-### 6. Refresh AI Insights
-```http
-POST /api/tickets/TKT-001/ai-insights
+#### 4. Add Internal Note
+```bash
+curl -X POST http://localhost:8000/api/tickets/TKT-001/notes \
+  -H "Content-Type: application/json" \
+  -d '{"note_text": "Contacted courier support team in Mumbai hub."}'
 ```
-**Response (200 OK):** Returns updated ticket object with fresh category, priority, sentiment, and draft response.
 
 ---
 
@@ -239,13 +229,7 @@ POST /api/tickets/TKT-001/ai-insights
 - Python 3.10+
 - Node.js 18+ & npm
 
-### 1. Clone the Repository
-```bash
-git clone <your-repository-url>
-cd datastraw
-```
-
-### 2. Backend Setup
+### 1. Backend Setup
 ```bash
 cd backend
 python -m venv venv
@@ -258,13 +242,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
 
-# Run backend development server
+# Run backend server
 uvicorn app.main:app --reload --port 8000
 ```
 Backend API will be accessible at: `http://localhost:8000`
 Interactive Swagger Docs: `http://localhost:8000/docs`
 
-### 3. Frontend Setup
+### 2. Frontend Setup
 In a separate terminal:
 ```bash
 cd frontend
@@ -273,7 +257,7 @@ npm run dev
 ```
 Frontend development server will open at: `http://localhost:5173`
 
-### 4. Running Automated Tests
+### 3. Running Automated Tests
 ```bash
 cd backend
 # With active virtual environment:
@@ -292,6 +276,7 @@ pytest -v
 | `ALLOWED_ORIGINS` | `http://localhost:5173,...` | Comma-separated list of allowed CORS origins. |
 | `AI_PROVIDER` | `mock` | AI engine (`mock`, `gemini`, or `openai`). |
 | `AI_API_KEY` | *(empty)* | Optional API key for external LLM inference. |
+| `VITE_API_BASE_URL`| *(empty)* | Optional explicit API URL for frontend. Defaults to relative `/` in production. |
 
 ---
 
@@ -315,32 +300,13 @@ This repository includes a multi-stage `Dockerfile`:
 1. It builds the React SPA into static assets.
 2. It installs Python dependencies and starts FastAPI.
 3. FastAPI serves the compiled SPA at `/` and the REST API at `/api/*`.
-4. This eliminates CORS complexities in production and runs within Railway's single-service hobby limits.
+4. This eliminates CORS complexities in production and runs within Railway's single-service tier.
 
 ---
 
-## Key Design Decisions & Tradeoffs
+## Known Limitations & Future Improvements
 
-1. **FastAPI + Pydantic V2**:
-   - *Decision*: Strict schema validation on input/output.
-   - *Rationale*: Prevents database injection, handles whitespace edge cases cleanly, and produces self-documenting OpenAPI specs.
-2. **Sequential Formatted Ticket IDs (`TKT-001`)**:
-   - *Decision*: Separate integer primary key `id` from human-facing `ticket_id`.
-   - *Rationale*: Internal databases use auto-incremented integer keys for performance, while human agents communicate using branded, recognizable identifiers.
-3. **Dedicated Notes Table vs Array in Ticket**:
-   - *Decision*: Normalized 1-to-many relational table for notes.
-   - *Rationale*: Preserves chronological fidelity, allows timestamping each individual comment, and prevents race conditions from concurrent note edits.
-4. **Non-Blocking AI Integration**:
-   - *Decision*: AI analysis is wrapped in safe exception barriers and runs as an auxiliary service.
-   - *Rationale*: A customer support ticket must NEVER fail to save because a third-party AI service timed out or hit rate limits.
-
----
-
-## Evaluation / Interview Quick Reference
-
-| Topic | Key Points to Explain |
-|---|---|
-| **Architecture** | Clear separation: React SPA &rarr; REST API &rarr; FastAPI Routers &rarr; Service Business Logic &rarr; SQLAlchemy & SQLite. |
-| **Data Integrity** | Foreign key constraints on `notes.ticket_id`, automatic UTC timestamps, validation of non-blank fields and email formats. |
-| **Search Performance** | Server-side query using `or_` with `func.lower()` across 4 indexed/text fields, debounced on frontend to conserve bandwidth. |
-| **Production Resilience** | Structured HTTP error codes (404, 422, 500), CORS origin filtering, `/health` endpoint, and Railway volume persistence. |
+1. **Authentication & RBAC**: Currently designed for internal trust. Production upgrades would introduce JWT authentication with role-based permissions (Admin vs Agent).
+2. **File Attachments**: Adding support for customers or agents to attach screenshots or invoice PDFs (via AWS S3 or Cloudflare R2).
+3. **Real-time Updates**: Adding WebSockets for live push notifications when new tickets are created or updated.
+4. **Pagination**: Adding cursor-based pagination to `/api/tickets` when ticket volumes reach tens of thousands.

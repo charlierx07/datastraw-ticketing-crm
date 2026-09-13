@@ -6,16 +6,27 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
+from app.services.ai_service import AIService
+from app.models.ticket import Ticket, Note
 
 
 @pytest.fixture
 def client_and_db():
     # Use in-memory SQLite with StaticPool so all connections share the same memory instance
+    from sqlalchemy import event
+
     test_engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool
     )
+
+    @event.listens_for(test_engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
+
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
 
@@ -72,7 +83,6 @@ def test_ticket_crud_and_search_flow(client_and_db):
     assert res_list.status_code == 200
     items = res_list.json()
     assert len(items) == 2
-    # Order should be newest first
     assert items[0]["ticket_id"] == "TKT-002"
     assert items[1]["ticket_id"] == "TKT-001"
 
@@ -96,7 +106,7 @@ def test_ticket_crud_and_search_flow(client_and_db):
     assert len(res_search_desc.json()) == 1
     assert res_search_desc.json()[0]["ticket_id"] == "TKT-001"
 
-    # 9. Update ticket 1 status and add note
+    # 9. Update ticket 1 status and add note via PUT
     update_res = client.put(
         "/api/tickets/TKT-001",
         json={"status": "In Progress", "notes": "Contacted logistics hub in Mumbai."}
@@ -104,14 +114,15 @@ def test_ticket_crud_and_search_flow(client_and_db):
     assert update_res.status_code == 200
     assert update_res.json()["success"] is True
 
-    # 10. Add second note without status change
-    note_res = client.put(
-        "/api/tickets/TKT-001",
-        json={"notes": "Customer notified via SMS."}
+    # 10. Add second note via POST /api/tickets/{ticket_id}/notes
+    note_res = client.post(
+        "/api/tickets/TKT-001/notes",
+        json={"note_text": "Customer notified via SMS."}
     )
-    assert note_res.status_code == 200
+    assert note_res.status_code == 201
+    assert note_res.json()["note_text"] == "Customer notified via SMS."
 
-    # 11. Retrieve ticket detail and verify notes
+    # 11. Retrieve ticket detail and verify both notes are returned chronologically
     detail_res = client.get("/api/tickets/TKT-001")
     assert detail_res.status_code == 200
     detail = detail_res.json()
@@ -138,10 +149,10 @@ def test_ticket_crud_and_search_flow(client_and_db):
     assert len(res_comb_no_match.json()) == 0
 
 
-def test_api_validations_and_404(client_and_db):
+def test_api_validations_and_errors(client_and_db):
     client, _ = client_and_db
 
-    # 1. Invalid email
+    # 1. Invalid email format
     bad_email = client.post(
         "/api/tickets",
         json={
@@ -153,7 +164,18 @@ def test_api_validations_and_404(client_and_db):
     )
     assert bad_email.status_code == 422
 
-    # 2. Empty string validation
+    # 2. Missing required fields
+    missing_desc = client.post(
+        "/api/tickets",
+        json={
+            "customer_name": "Test User",
+            "customer_email": "test@domain.com",
+            "subject": "Issue"
+        }
+    )
+    assert missing_desc.status_code == 422
+
+    # 3. Empty string / whitespace validation
     empty_name = client.post(
         "/api/tickets",
         json={
@@ -165,23 +187,31 @@ def test_api_validations_and_404(client_and_db):
     )
     assert empty_name.status_code == 422
 
-    # 3. Missing ticket 404
+    # 4. Unknown ticket ID returns 404
     missing_ticket = client.get("/api/tickets/TKT-999")
     assert missing_ticket.status_code == 404
     assert "not found" in missing_ticket.json()["detail"].lower()
 
-    # 4. Invalid status update
+    # 5. Invalid status update returns 400 Bad Request
     invalid_status = client.put(
         "/api/tickets/TKT-001",
-        json={"status": "ArbitraryStatus"}
+        json={"status": "ArbitraryInvalidStatus"}
     )
-    assert invalid_status.status_code == 422
+    assert invalid_status.status_code == 400
+    assert "invalid status" in invalid_status.json()["detail"].lower()
+
+    # 6. Add note to unknown ticket returns 404
+    bad_note = client.post(
+        "/api/tickets/TKT-999/notes",
+        json={"note_text": "Some note text"}
+    )
+    assert bad_note.status_code == 404
 
 
-def test_ai_insights_feature(client_and_db):
+def test_ai_insights_feature_and_fallback(client_and_db):
     client, _ = client_and_db
 
-    # Create ticket with logistics issue
+    # 1. AI Analysis during ticket creation
     payload = {
         "customer_name": "Vikram Mehta",
         "customer_email": "vikram@outlook.com",
@@ -201,7 +231,47 @@ def test_ai_insights_feature(client_and_db):
     assert data["ai_sentiment"] == "Negative"
     assert "Hi Vikram" in data["ai_suggested_response"]
 
-    # Test refresh endpoint
+    # 2. Test refresh endpoint
     refresh_res = client.post(f"/api/tickets/{tid}/ai-insights")
     assert refresh_res.status_code == 200
     assert refresh_res.json()["ticket_id"] == tid
+
+    # 3. Test resilience: simulate unexpected AI exception
+    fallback_res = AIService.analyze_ticket("Test User", "Problem", "Broken")
+    assert fallback_res["category"] is not None
+    assert fallback_res["priority"] is not None
+    assert fallback_res["sentiment"] is not None
+    assert fallback_res["suggested_response"] is not None
+
+
+def test_cascading_delete(client_and_db):
+    client, TestingSessionLocal = client_and_db
+
+    # Create ticket
+    res = client.post("/api/tickets", json={
+        "customer_name": "Delete Test",
+        "customer_email": "del@test.com",
+        "subject": "To be deleted",
+        "description": "Will delete this ticket"
+    })
+    tid = res.json()["ticket_id"]
+
+    # Add 2 notes
+    client.post(f"/api/tickets/{tid}/notes", json={"note_text": "Note 1"})
+    client.post(f"/api/tickets/{tid}/notes", json={"note_text": "Note 2"})
+
+    # Check in DB
+    db = TestingSessionLocal()
+    ticket = db.query(Ticket).filter(Ticket.ticket_id == tid).first()
+    assert ticket is not None
+    notes = db.query(Note).filter(Note.ticket_id == tid).all()
+    assert len(notes) == 2
+
+    # Delete ticket directly
+    db.delete(ticket)
+    db.commit()
+
+    # Verify notes were cascaded and deleted
+    remaining_notes = db.query(Note).filter(Note.ticket_id == tid).all()
+    assert len(remaining_notes) == 0
+    db.close()

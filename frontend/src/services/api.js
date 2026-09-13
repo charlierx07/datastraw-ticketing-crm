@@ -1,4 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+// Determine API base URL dynamically:
+// 1. If VITE_API_BASE_URL environment variable is provided, use it.
+// 2. In local development (Vite dev server on port 5173), fallback to 'http://localhost:8000'.
+// 3. In production, default to '' (empty string) for same-origin requests, preventing any hardcoded localhost leaks.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL !== undefined && import.meta.env.VITE_API_BASE_URL !== ''
+  ? import.meta.env.VITE_API_BASE_URL
+  : (import.meta.env.DEV ? 'http://localhost:8000' : '');
 
 /**
  * Standard HTTP error with formatted message
@@ -80,6 +86,13 @@ export const api = {
     return request(`/api/tickets/${encodeURIComponent(ticketId)}`, {
       method: 'PUT',
       body: JSON.stringify(updateData),
+    });
+  },
+
+  addNote: async (ticketId, noteText) => {
+    return request(`/api/tickets/${encodeURIComponent(ticketId)}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ note_text: noteText }),
     });
   },
 
