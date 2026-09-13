@@ -2,7 +2,6 @@ import React from 'react';
 import { 
   Search, 
   Menu, 
-  Bell, 
   RefreshCw, 
   Plus, 
   X
@@ -72,15 +71,6 @@ export const Topbar = ({
           className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
-        </button>
-
-        {/* Notification Bell */}
-        <button 
-          title="Notifications"
-          className="relative p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition"
-        >
-          <Bell className="w-3.5 h-3.5" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-600" />
         </button>
 
         <div className="h-5 w-px bg-slate-200 hidden sm:block" />

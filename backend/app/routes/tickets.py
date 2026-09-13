@@ -36,10 +36,7 @@ def create_ticket(
 ):
     try:
         created_ticket = TicketService.create_ticket(db=db, ticket_in=ticket_in)
-        return TicketCreateResponse(
-            ticket_id=created_ticket.ticket_id,
-            created_at=created_ticket.created_at
-        )
+        return created_ticket
     except Exception as e:
         logger.error(f"Error creating ticket: {e}", exc_info=True)
         db.rollback()
@@ -121,6 +118,7 @@ def update_ticket(
 
     return TicketUpdateResponse(
         success=True,
+        status=updated_ticket.status,
         updated_at=updated_ticket.updated_at
     )
 

@@ -29,7 +29,16 @@ class TicketCreate(BaseModel):
 
 class TicketCreateResponse(BaseModel):
     ticket_id: str
+    customer_name: str
+    customer_email: str
+    subject: str
+    description: str
+    status: str
     created_at: datetime
+    ai_category: Optional[str] = None
+    ai_priority: Optional[str] = None
+    ai_sentiment: Optional[str] = None
+    ai_suggested_response: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -93,4 +102,7 @@ class TicketUpdate(BaseModel):
 
 class TicketUpdateResponse(BaseModel):
     success: bool = True
+    status: Optional[str] = None
     updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

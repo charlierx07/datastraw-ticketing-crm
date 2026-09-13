@@ -16,6 +16,18 @@ export const CreateTicketModal = ({ isOpen, onClose, onTicketCreated, onOpenTick
   const [createdTicket, setCreatedTicket] = useState(null);
   const [copiedId, setCopiedId] = useState(false);
 
+  // Close on Escape key press
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleResetAndClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const validate = () => {
@@ -89,8 +101,14 @@ export const CreateTicketModal = ({ isOpen, onClose, onTicketCreated, onOpenTick
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/30 backdrop-blur-2xs flex items-center justify-center p-4 transition-opacity duration-150">
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-xl relative animate-fade-in">
+    <div 
+      onClick={handleResetAndClose}
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/30 backdrop-blur-2xs flex items-center justify-center p-4 transition-opacity duration-150"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-xl relative animate-fade-in"
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100">

@@ -34,7 +34,7 @@ class Ticket(Base):
         back_populates="ticket",
         cascade="all, delete-orphan",
         passive_deletes=True,
-        order_by="desc(Note.created_at)"
+        order_by="Note.created_at"
     )
 
 
