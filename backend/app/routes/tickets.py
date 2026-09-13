@@ -3,6 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.schemas.ticket import (
     TicketCreate,
@@ -159,10 +160,18 @@ def generate_ai_insights(
     ticket_id: str,
     db: Session = Depends(get_db)
 ):
-    ticket = TicketService.generate_ai_insights(db=db, ticket_id=ticket_id)
-    if not ticket:
+    ticket_exists = TicketService.get_ticket_by_id(db=db, ticket_id=ticket_id)
+    if not ticket_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Ticket '{ticket_id}' not found."
         )
+
+    if not settings.gemini_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Gemini API key is not configured. Please set the GEMINI_API_KEY environment variable in your .env file."
+        )
+
+    ticket = TicketService.generate_ai_insights(db=db, ticket_id=ticket_id)
     return ticket

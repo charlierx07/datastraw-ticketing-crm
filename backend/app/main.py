@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.database import engine, Base
+from app.database import engine, Base, init_db
 from app.routes.tickets import router as tickets_router
 import app.models.ticket  # Ensures models are imported for metadata creation
 
@@ -13,7 +13,7 @@ import app.models.ticket  # Ensures models are imported for metadata creation
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Automatically initialize SQLite database tables on application start
-    Base.metadata.create_all(bind=engine)
+    init_db()
     yield
 
 

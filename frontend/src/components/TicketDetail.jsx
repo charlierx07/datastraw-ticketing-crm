@@ -23,6 +23,8 @@ export const TicketDetail = ({ ticketId, onBack, onTicketUpdated }) => {
 
   // AI Insights state
   const [isRefreshingAi, setIsRefreshingAi] = useState(false);
+  const [aiError, setAiError] = useState(null);
+  const [aiSuccessMsg, setAiSuccessMsg] = useState(null);
   const [copiedDraft, setCopiedDraft] = useState(false);
 
   const fetchDetail = async () => {
@@ -78,12 +80,27 @@ export const TicketDetail = ({ ticketId, onBack, onTicketUpdated }) => {
   };
 
   const handleRefreshAi = async () => {
+    if (!ticket || isRefreshingAi) return;
     setIsRefreshingAi(true);
+    setAiError(null);
+    setAiSuccessMsg(null);
     try {
-      await api.triggerAiInsights(ticket.ticket_id);
-      await fetchDetail();
+      const updated = await api.triggerAiInsights(ticket.ticket_id);
+      if (updated) {
+        setTicket(updated);
+        if (updated.ai_source === 'fallback') {
+          setAiSuccessMsg('Analyzed using local fallback heuristics (Gemini API unavailable).');
+        } else {
+          setAiSuccessMsg('AI Ticket Analysis completed successfully using Gemini 3.6 Flash.');
+        }
+        setTimeout(() => setAiSuccessMsg(null), 6000);
+      } else {
+        await fetchDetail();
+      }
+      if (onTicketUpdated) onTicketUpdated();
     } catch (err) {
       console.error('AI refresh error:', err);
+      setAiError(err.message || 'Failed to perform AI analysis. Please check your Gemini API key.');
     } finally {
       setIsRefreshingAi(false);
     }
@@ -273,27 +290,79 @@ export const TicketDetail = ({ ticketId, onBack, onTicketUpdated }) => {
           <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-5 shadow-2xs">
             
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 mb-3.5">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-blue-600" />
                 <div>
                   <h3 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                     AI Ticket Intelligence
-                    <span className="text-[10px] font-normal text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                      Optional Assist
-                    </span>
+                    {ticket.ai_source === 'fallback' ? (
+                      <span className="text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                        Fallback Heuristics Output
+                      </span>
+                    ) : ticket.ai_category ? (
+                      <span className="text-[10px] font-medium text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200 flex items-center gap-1">
+                        Gemini 3.6 Flash
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-normal text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                        Gemini AI Assist
+                      </span>
+                    )}
                   </h3>
                 </div>
               </div>
               <button
                 onClick={handleRefreshAi}
                 disabled={isRefreshingAi}
-                className="text-[11px] font-medium text-slate-600 hover:text-slate-900 flex items-center gap-1 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 transition disabled:opacity-50"
+                title="Run Gemini AI Ticket Analysis"
+                className="text-[11px] font-medium text-blue-700 hover:text-blue-800 flex items-center gap-1.5 bg-blue-50/70 hover:bg-blue-100/70 px-3 py-1 rounded-md border border-blue-200 transition disabled:opacity-50 shadow-2xs"
               >
-                <RefreshCw className={`w-3 h-3 ${isRefreshingAi ? 'animate-spin text-blue-600' : ''}`} />
-                <span>Re-analyze</span>
+                <Sparkles className={`w-3 h-3 ${isRefreshingAi ? 'animate-spin text-blue-600' : 'text-blue-600'}`} />
+                <span>{isRefreshingAi ? 'Analyzing...' : 'AI Ticket Analysis'}</span>
               </button>
             </div>
+
+            {/* Loading State Banner */}
+            {isRefreshingAi && (
+              <div className="flex items-center gap-2 p-2.5 mb-3 bg-blue-50/80 border border-blue-100 rounded-lg text-xs text-blue-700 animate-pulse">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                <span>Analyzing ticket with Google Gemini 3.6 Flash...</span>
+              </div>
+            )}
+
+            {/* Error State Banner (e.g. missing API key or backend failure) */}
+            {aiError && (
+              <div className="flex items-start gap-2.5 p-3 mb-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-semibold text-rose-900">AI Analysis Notice</p>
+                  <p className="text-rose-700 mt-0.5 leading-relaxed">{aiError}</p>
+                </div>
+                <button
+                  onClick={() => setAiError(null)}
+                  className="text-rose-500 hover:text-rose-700 text-xs font-medium ml-2"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {/* Success State Banner */}
+            {aiSuccessMsg && (
+              <div className="flex items-center justify-between gap-2 p-2.5 mb-3 bg-emerald-50 border border-emerald-100 rounded-lg text-xs text-emerald-800">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{aiSuccessMsg}</span>
+                </div>
+                <button
+                  onClick={() => setAiSuccessMsg(null)}
+                  className="text-emerald-600 hover:text-emerald-800 text-[11px]"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             {/* AI Tags */}
             <div className="grid grid-cols-3 gap-2.5 mb-3.5">
@@ -342,8 +411,8 @@ export const TicketDetail = ({ ticketId, onBack, onTicketUpdated }) => {
                 </p>
               </div>
             ) : (
-              <div className="text-center py-2 text-xs text-slate-400">
-                AI analysis unavailable for this ticket. Click "Re-analyze" to generate.
+              <div className="text-center py-3 text-xs text-slate-400 bg-white rounded-lg border border-dashed border-slate-200">
+                AI analysis has not been generated for this ticket. Click "AI Ticket Analysis" above to generate.
               </div>
             )}
           </div>

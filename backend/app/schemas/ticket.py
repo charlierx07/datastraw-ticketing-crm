@@ -39,6 +39,7 @@ class TicketCreateResponse(BaseModel):
     ai_priority: Optional[str] = None
     ai_sentiment: Optional[str] = None
     ai_suggested_response: Optional[str] = None
+    ai_source: Optional[str] = "gemini"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -91,6 +92,7 @@ class TicketDetailResponse(BaseModel):
     ai_priority: Optional[str] = None
     ai_sentiment: Optional[str] = None
     ai_suggested_response: Optional[str] = None
+    ai_source: Optional[str] = "gemini"
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -27,6 +27,7 @@ class Ticket(Base):
     ai_priority = Column(String(20), nullable=True)
     ai_sentiment = Column(String(20), nullable=True)
     ai_suggested_response = Column(Text, nullable=True)
+    ai_source = Column(String(50), nullable=True, default="gemini")
 
     # 1-to-Many Relationship with notes (cascading delete)
     notes = relationship(

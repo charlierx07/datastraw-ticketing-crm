@@ -41,7 +41,8 @@ class TicketService:
             ai_category=ai_data.get("category"),
             ai_priority=ai_data.get("priority"),
             ai_sentiment=ai_data.get("sentiment"),
-            ai_suggested_response=ai_data.get("suggested_response")
+            ai_suggested_response=ai_data.get("suggested_response"),
+            ai_source=ai_data.get("ai_source", "gemini")
         )
         db.add(db_ticket)
         db.commit()
@@ -137,6 +138,7 @@ class TicketService:
         ticket.ai_priority = ai_data.get("priority")
         ticket.ai_sentiment = ai_data.get("sentiment")
         ticket.ai_suggested_response = ai_data.get("suggested_response")
+        ticket.ai_source = ai_data.get("ai_source", "gemini")
 
         db.commit()
         db.refresh(ticket)

@@ -37,6 +37,22 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+def init_db():
+    """Initializes tables and automatically applies non-breaking schema updates."""
+    import app.models.ticket  # noqa: F401
+    Base.metadata.create_all(bind=engine)
+    try:
+        from sqlalchemy import inspect, text
+        inspector = inspect(engine)
+        if "tickets" in inspector.get_table_names():
+            columns = [c["name"] for c in inspector.get_columns("tickets")]
+            if "ai_source" not in columns:
+                with engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE tickets ADD COLUMN ai_source VARCHAR(50) DEFAULT 'gemini'"))
+    except Exception as e:
+        logger.warning(f"Could not verify ai_source column: {e}")
+
+
 def get_db():
     """FastAPI dependency yielding a SQLAlchemy session and ensuring proper close."""
     db = SessionLocal()

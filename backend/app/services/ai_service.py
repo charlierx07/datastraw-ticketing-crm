@@ -22,22 +22,20 @@ class AIService:
         returns sensible defaults without ever throwing an exception or blocking CRM CRUD.
         """
         try:
-            # 1. Check if external AI provider is configured with an API key
-            if settings.AI_API_KEY and settings.AI_PROVIDER.lower() in ["gemini", "openai"]:
-                # External API call can be executed here; falls back to heuristic engine if unavailable
+            # 1. Check if external AI provider is configured with Gemini API key
+            if settings.gemini_api_key and settings.AI_PROVIDER.lower() in ["gemini", "openai"]:
                 return AIService._call_external_ai(customer_name, subject, description)
 
-            # 2. Intelligent, deterministic fallback heuristics (guaranteed 100% offline uptime)
-            return AIService._heuristic_analysis(customer_name, subject, description)
+            # 2. Deterministic fallback heuristics
+            res = AIService._heuristic_analysis(customer_name, subject, description)
+            res["ai_source"] = "fallback"
+            return res
 
         except Exception as e:
             logger.warning(f"AI ticket analysis failed gracefully: {e}")
-            return {
-                "category": "General Inquiry",
-                "priority": "Medium",
-                "sentiment": "Neutral",
-                "suggested_response": "Thank you for reaching out to customer support. We are reviewing your ticket."
-            }
+            res = AIService._heuristic_analysis(customer_name, subject, description)
+            res["ai_source"] = "fallback"
+            return res
 
     @staticmethod
     def _heuristic_analysis(
@@ -110,27 +108,30 @@ class AIService:
             "category": category,
             "priority": priority,
             "sentiment": sentiment,
-            "suggested_response": suggested_response
+            "suggested_response": suggested_response,
+            "ai_source": "fallback"
         }
 
     @staticmethod
     def _call_external_ai(customer_name: str, subject: str, description: str) -> Dict[str, str]:
         if settings.AI_PROVIDER.lower() == "gemini":
             return AIService._call_gemini_ai(customer_name, subject, description)
-        # Fallback to heuristic analysis if any error occurs
-        return AIService._heuristic_analysis(customer_name, subject, description)
+        res = AIService._heuristic_analysis(customer_name, subject, description)
+        res["ai_source"] = "fallback"
+        return res
 
     @staticmethod
     def _call_gemini_ai(customer_name: str, subject: str, description: str) -> Dict[str, str]:
         """
-        Calls Google Gemini 1.5 Flash API via HTTP REST using httpx.
+        Calls Google Gemini API via HTTP REST using httpx.
         Uses structured JSON response format.
-        Falls back to heuristics if timeout, quota error, or invalid key occurs.
+        Falls back to heuristics with clear 'fallback' label if timeout, quota error, or invalid key occurs.
         """
         import httpx
         import json
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={settings.AI_API_KEY}"
+        api_key = settings.gemini_api_key
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
         prompt = (
             f"You are an AI customer support assistant. Analyze the following customer support ticket and return a JSON object:\n"
             f"Customer Name: {customer_name}\n"
@@ -178,11 +179,14 @@ class AIService:
                     "category": category,
                     "priority": priority,
                     "sentiment": sentiment,
-                    "suggested_response": suggested_response
+                    "suggested_response": suggested_response,
+                    "ai_source": "gemini"
                 }
             else:
                 logger.warning(f"Gemini API returned status {resp.status_code}: {resp.text[:200]}")
         except Exception as e:
             logger.warning(f"Gemini API call failed, falling back to heuristics: {e}")
 
-        return AIService._heuristic_analysis(customer_name, subject, description)
+        fallback = AIService._heuristic_analysis(customer_name, subject, description)
+        fallback["ai_source"] = "fallback"
+        return fallback
